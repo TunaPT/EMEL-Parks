@@ -1,0 +1,102 @@
+Humano: Em dart, faz-me uma função que determine a distância de um utilizador a um parque.
+----------------------
+Chatgpt:
+
+import 'dart:math';
+
+// Função que calcula a distância entre dois pontos geográficos usando a fórmula do haversine
+double calcularDistancia(double lat1, double lon1, double lat2, double lon2) {
+  const double R = 6371e3; // Raio da Terra em metros
+  final double phi1 = lat1 * pi / 180; // φ, λ em radianos
+  final double phi2 = lat2 * pi / 180;
+  final double deltaPhi = (lat2 - lat1) * pi / 180;
+  final double deltaLambda = (lon2 - lon1) * pi / 180;
+
+  final double a = sin(deltaPhi / 2) * sin(deltaPhi / 2) +
+      cos(phi1) * cos(phi2) *
+      sin(deltaLambda / 2) * sin(deltaLambda / 2);
+  final double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+  final double distancia = R * c; // em metros
+  return distancia;
+}
+
+void main() {
+  // Exemplo de coordenadas
+  double latUsuario = 38.736946;
+  double lonUsuario = -9.142685;
+  double latParque = 38.715908;
+  double lonParque = -9.139259;
+
+  double distancia = calcularDistancia(latUsuario, lonUsuario, latParque, lonParque);
+
+  print("A distância até o parque é de ${distancia.toStringAsFixed(2)} metros.");
+}
+
+Humano: Implementa uma versão alternativa que utilize a biblioteca geolocator.
+----------------------
+Chatgpt:
+
+Future<void> _determineDistance() async {
+    // Coordenadas do parque
+    double latParque = 38.715908;
+    double lonParque = -9.139259;
+
+    // Obtém a localização atual do utilizador
+    Position position = await _determinePosition();
+
+    // Calcula a distância
+    double distanceInMeters = Geolocator.distanceBetween(
+      position.latitude,
+      position.longitude,
+      latParque,
+      lonParque,
+    );
+
+    setState(() {
+      _distance = distanceInMeters;
+    });
+  }
+
+  Future<Position> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // Verifica se o serviço de localização está ativado
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return Future.error('Os serviços de localização estão desativados.');
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return Future.error('As permissões de localização foram negadas.');
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return Future.error('As permissões de localização estão permanentemente negadas.');
+    }
+
+    return await Geolocator.getCurrentPosition();
+  }
+----------------------
+Conclusão do grupo: Destas duas alternativas apresentadas pelo chatgpt, escolhemos a segunda alternativa e que está
+implementada na nossa dashboard e listagem de parques, por dois motivos:
+
+1 - É de fácil uso e compreensão.
+2 - Garante precisão e manutenção, sendo que não existe necessidade de gerir nada em específico.
+
+No entanto, existe uma pequena desvantagem: O uso de uma biblioteca externa, adiciona 
+uma dependência ao nosso projeto. Poderá vir a ser um problema caso deixe de ser atualizada.
+
+Relativamente à primeira alternativa, destacamos algumas vantagens:
+
+1 - Não depende de nenhuma biblioteca, ou seja, não existe dependências
+2 - Como o código é feito de raiz, é possível fazer modificações caso necessário.
+
+O único problema que detetamos nesta resolução, é a complexidade. A implementação é mais complexa do
+que simplesmente utilizar uma biblioteca, sendo que existe maior probabilidade de
+exitir algum erro.
